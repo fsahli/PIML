@@ -1,0 +1,367 @@
+---
+title: "Neural operators"
+bibliography: litra.bib
+---
+
+::: {.hidden}
+$$
+\renewcommand{\vec}[1]{\boldsymbol{#1}}
+$$
+:::
+
+## Neural operators
+
+### What is an operator?
+
+Functions map numbers to numbers, and operators map functions to functions. Example: the derivative.
+
+![](animations/media/videos/operator/1080p60/TransformFunction_ManimCE_v0.17.3.gif)
+
+The derivative is an example of a linear operator, since:
+
+$$\frac{d}{dx} [f(x) + g(x)] = \frac{d}{dx} f(x) + \frac{d}{dx} g(x)$$
+
+and
+
+$$\frac{d}{dx} [\alpha f(x)] = \alpha \frac{d}{dx} f(x)$$
+
+The anti-derivative (or integral) is another example of a linear operator.
+
+### Differential Operators
+
+Differential operators are operators defined as a function of the differentiation operator. For example, the Laplacian is defined as:
+$$ \Delta [\cdot] = \nabla \cdot \nabla [\cdot] $$
+
+A non-linear example is:
+$$ N[u] =\sqrt{\nabla u \cdot \nabla u} $$
+
+From here, it can be seen that partial differential equations can be written as a differential operator equated to something, for example:
+$$ N[u] = 1 \implies \sqrt{\nabla u \cdot \nabla u} = 1 $$
+
+### Partial Differential Equations
+
+In the context of partial differential equations and boundary value problems, we can define the solution operator. For instance, take the following boundary value problem (Poisson equation):
+
+$$ \Delta u(x) = f(x) \text{ on } \Omega $$
+$$ u(x) = 0 \text{ on } \partial \Omega $$
+
+We can define an operator, say $S$, such that:
+$$ u(x) = S[f](x)$$
+This means, for any input function $f(x)$, it will return the solution $u(x)$ of the boundary value problem. It's noteworthy that in most cases, the solution operator is implicitly defined by the boundary value problem, i.e., we do not have an explicit expression to evaluate it.
+
+#### Example
+
+For a 1-D Poisson equation:
+$$ \frac{d^2 u}{dx^2} = f(x)$$
+$$u(0) = 0, u(1) = 0$$
+
+
+```{python}
+#| code-fold: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Define the polynomials and their second derivatives
+x = np.linspace(0.0, 1.0, 400)
+
+P2 = x**2 - x
+P3 = x**3 - x**2
+P4 = x**4 - x**3
+
+d2P2 = 2 * np.ones_like(x)
+d2P3 = 6*x - 2
+d2P4 = 12*x**2 - 6*x
+
+# Create subplots
+fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+
+# Plot the second derivatives on the left subplot
+ax[0].plot(x, d2P2, label="2nd derivative of $P_2(x)$", color='r')
+ax[0].plot(x, d2P3, label="2nd derivative of $P_3(x)$", color='g')
+ax[0].plot(x, d2P4, label="2nd derivative of $P_4(x)$", color='b')
+#ax[0].legend()
+#ax[0].set_title("Second Derivatives")
+ax[0].set_xlabel("x")
+ax[0].set_ylabel("f(x)")
+ax[0].set_xlim((0,1))
+
+# Plot the polynomials on the right subplot
+ax[1].plot(x, P2, label="$P_2(x)$", color='r')
+ax[1].plot(x, P3, label="$P_3(x)$", color='g')
+ax[1].plot(x, P4, label="$P_4(x)$", color='b')
+#ax[1].legend()
+#ax[1].set_title("Polynomials")
+ax[1].set_xlabel("x")
+ax[1].set_ylabel("u(x) = S[f](x)")
+ax[1].set_xlim((0,1))
+
+
+plt.tight_layout()
+plt.show()
+
+
+```
+
+For initial value problems, we can define a solution operator that is time dependent:
+
+$$ u(x,t) = S_t [g](x) $$
+
+that $S_t$ maps the initial condition $g(x)$ to the solution $u(x,t)$ at time $t$.
+
+Example: 1D transient heat equation:
+$$\frac{du}{dt} = \Delta u$$
+$$u(0) = 0, u(1) = 0$$
+$$u(x,0) = g(x)$$
+
+
+```{python}
+#| code-fold: true
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import numpy as np
+
+# Function that returns the sum of 4 sine waves
+def sine_sum(x, f1, f2, f3, f4):
+    return f1*np.sin(np.pi * x) + f2*np.sin(2*np.pi * x) + f3*np.sin(3*np.pi * x) + f4*np.sin(4*np.pi * x)
+
+# Generate x values
+x_values = np.linspace(0, 1, 100)
+
+# Initial frequencies
+init_frequencies = [1, 2, 3, 4]
+times = [1e-3,1e-2,1e-1,1e0]
+eigs = (np.array([1,2,3,4])*np.pi)**2
+val = 1.0
+ws = np.array([np.exp(-0.3*val**2), np.exp(-0.3*(val-1.0)**2), np.exp(-0.3*(val-2)**2), np.exp(-0.3*(val-3)**2)])
+
+# Generate the subplot figure
+fig = make_subplots(rows=1, cols=2, subplot_titles=("g(x)", "u(x,t) = St[g(x)]"))
+
+# Add traces for the sum of sines
+fig.add_trace(
+    go.Scatter(x=x_values, y=sine_sum(x_values, *init_frequencies), name = "g(x)"),
+    row=1, col=1
+)
+
+
+for time in times:
+    fig.add_trace(
+        go.Scatter(x=x_values, y=sine_sum(x_values, *(ws*np.exp(-time*eigs))), name = "time %.1e" % time),
+        row=1, col=2
+    )
+
+# Define steps for sliders
+steps = []
+for val in np.arange(0.0, 4.0, 0.1):
+    
+
+    ws = np.array([np.exp(-0.3*val**2), np.exp(-0.3*(val-1.0)**2), np.exp(-0.3*(val-2)**2), np.exp(-0.3*(val-3)**2)])
+    step = dict(
+        method='update',
+        args=[{'y': [
+            sine_sum(x_values, *ws),
+            sine_sum(x_values, *(ws*np.exp(-times[0]*eigs))),
+            sine_sum(x_values, *(ws*np.exp(-times[1]*eigs))) ,
+            sine_sum(x_values, *(ws*np.exp(-times[2]*eigs))) ,
+            sine_sum(x_values, *(ws*np.exp(-times[3]*eigs))) ,
+        ]}],
+        label=str(val)
+    )
+    steps.append(step)
+
+# Create sliders
+sliders = [dict(
+    active=1,
+    currentvalue={"prefix": "move the slider to change g(x): "},
+    pad={"t": 50},
+    steps=steps
+)]
+
+# Add sliders to the figure
+fig.update_layout(
+    sliders=sliders
+)
+
+# Show the figure
+fig.show()
+
+
+
+```
+
+
+If we fix $t$ to a small value, we will call this the forward operator $F := S_{\Delta t}$, which we can apply recursively:
+
+$$ u(x,0) = g(x) $$
+$$ u(x,\Delta t) = F(g(x)) $$
+$$ u(x,2\Delta t) = F(u(x,\Delta t)) $$
+$$ u(x,3\Delta t) = F(u(x,2\Delta t)) $$
+$$ \vdots $$
+$$ u(x,n\Delta t) = F(u(x,(n-1)\Delta t)) $$
+
+
+Note that this is exactly the idea behind time integrators. Example:
+
+For the Forward Euler method, given:
+
+$$ \frac{du}{dt} = f(u) $$
+
+We have:
+
+$$ F[u] = u + \Delta t  f(u) $$
+
+Then,
+
+$$ u(t + \Delta t) = F[u](t) $$
+
+
+For explicit time integrators, we can obtain an expression that we can evaluate for $F$, and for implicit integrators, we need to solve an equation to compute $F$.
+
+
+
+# Neural operators
+
+Now, we would like to approximate any operator with neural networks. Why?
+
+- In the case of implicit operators, the computational burden of computing the operator is significant.
+- In the case of explicit operators, the time step might be too small, then the cost advance in time can be significant.
+- Sometimes, we only have data, so there is no expression (implicit or explicit) for the operator.
+- There is a theorem that shows that some neural networks can universally approximate operators [@chen1995universal].
+
+Let's define the operator learning problem: for an input function $g$ learn the operator $S$ such the output function can be computed as $$u(\vec{x}) = S[g](\vec{x})$$
+
+*A brief note: in general the input function $g$ and the output function $u$ can have different domains. Here, we are going to assume they have the same domain for simplicity and because this is the most common application.*
+
+
+
+## Deep operator networks (deep o' nets)
+
+One of the main issues of operator learning is that neural networks fundamentally represent functions, i.e., they map numbers to numbers. How can we modify them to take functions as inputs instead of numbers?
+
+The approach taken in [@lu2021learning] is to represent the input function at predefined locations, called "sensors". 
+
+
+```{python}
+#| code-fold: true
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Set up the figure and axis
+fig, ax = plt.subplots()
+f = lambda x: (1 - 0.9*x**2)*np.sin(2*np.pi*x) + 1
+# Define x and y for the blue curve
+x = np.linspace(0,1,100)
+y = f(x)
+
+# Plot the curve
+ax.plot(x, y, color='blue')
+
+sensors = [0.2,0.5,0.8]
+
+# Draw the vertical bars
+for sens in sensors:
+    ax.plot([sens, sens], [0, f(sens)], 'k')
+    ax.scatter([sens], [f(sens)], color = 'k')
+
+ax.set_xticks(sensors)
+ax.set_xticklabels(["$x_{i-1}$", "$x_i$", "$x_{i+1}$"])
+ax.set_yticks([])
+ax.set_xlim((0,1))
+ax.set_ylim((0,2))
+ax.set_ylabel("$g(x)$")
+
+
+# Display the plot
+plt.tight_layout()
+plt.show()
+
+```
+
+Then, they propose the following architecture:
+
+
+![Architecture of an unstacked deep o' net](images/deeponet.png)
+
+It consists of a branck network, which takes as input the values of the function $g$ at the sensor locations $\vec{x}_i$ and will produce a vector:
+ $$\boldsymbol{b} = NN(g(\vec{x}_1), g(\vec{x}_2),...,g(\vec{x}_N); \vec{\theta}_B) \in \mathbb{R}^p$$. 
+ The trunk network takes as input a coordinate $\boldsymbol{x}$ in the domain of the output function $u(\boldsymbol{x})$ and will produce a vector:
+
+ $$\vec{t} = NN(\vec{x}; \vec{\theta}_T) \in \mathbb{R}^p$$ 
+
+Then, the output of the network can be obtained by applying the dot product between there 2 vectors:
+$$u(\vec{x}) = S[g](\vec{x}) \approx \sum_k^p b_kt_k + c$$
+where is $c$ is a learnable bias. 
+
+### Example
+
+Approximate the anti-derivative operator in the interval $[-1,1]$:
+$$S[g](x) = \int_{-1}^x g(t) dt$$
+
+
+
+```{python}
+#| code-fold: true
+
+import numpy as np
+from scipy.integrate import cumtrapz
+from scipy.stats import multivariate_normal
+import matplotlib.pyplot as plt
+
+# Define the range and the number of points
+x = np.linspace(-1, 1, 100)
+
+# Define the kernel function
+def rbf_kernel(x1, x2, length_scale):
+    return np.exp(-0.5 * np.subtract.outer(x1, x2) ** 2 / length_scale ** 2)
+
+# Create the covariance matrix using the RBF kernel
+length_scale = 0.5
+K = rbf_kernel(x, x, length_scale)
+
+# Sample 100 curves from the Gaussian process for the training set
+np.random.seed(1234)
+training_set = multivariate_normal.rvs(mean=np.zeros(100), cov=K, size=20)
+
+# Compute the integral of each curve for the training set
+integral_training_set = np.array([cumtrapz(y, x, initial=0) for y in training_set])
+
+# Sample 20 curves for the test set
+np.random.seed(123)
+test_set = multivariate_normal.rvs(mean=np.zeros(100), cov=K, size=20)
+
+# Compute the integral of each curve in the test set
+integral_test_set = np.array([cumtrapz(y, x, initial=0) for y in test_set])
+
+# Create a figure with two subplots
+fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+
+# Plot the training curves
+for i in range(training_set.shape[0]):
+    ax[0].plot(x, training_set[i, :], color='skyblue', alpha=0.7)
+
+# Plot the integral of the training curves
+for i in range(integral_training_set.shape[0]):
+    ax[1].plot(x, integral_training_set[i, :], color='salmon', alpha=0.7)
+
+# Setting the titles for the subplots
+ax[0].set_ylabel('$g(x)$')
+ax[1].set_ylabel('$S[g](x)$')
+
+for a in ax:
+    a.set_xlim((-1,1))
+    a.set_xlabel(('$x$'))
+
+
+
+
+# Show the plot
+plt.tight_layout()
+plt.show()
+```
+
+See [Google Colab demo](https://colab.research.google.com/drive/1lK4mV2I51u7sqz8UnDUuEojS5jsnf0BL?usp=sharing)
+
+### References
+
+::: {#refs}
+:::

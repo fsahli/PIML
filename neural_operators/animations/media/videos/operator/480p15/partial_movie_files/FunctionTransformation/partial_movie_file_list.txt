@@ -1,0 +1,10 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/4266129954_4156520001_223132457.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/4266129954_645682970_491761349.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/4266129954_3419653792_1838387956.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/4266129954_2996830735_2199533653.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/1442284246_2526496290_3198216043.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/1442284246_1408219647_3374272880.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/1442284246_345352296_668045055.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/1442284246_4081381132_2196674971.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/480p15/partial_movie_files/FunctionTransformation/1442284246_190800790_590916581.mp4'

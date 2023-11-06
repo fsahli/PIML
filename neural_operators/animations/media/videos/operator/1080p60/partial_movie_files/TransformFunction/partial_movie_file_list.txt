@@ -1,0 +1,5 @@
+# This file is used internally by FFMPEG.
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/1080p60/partial_movie_files/TransformFunction/3405002780_1987292553_4229663659.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/1080p60/partial_movie_files/TransformFunction/680023278_3099396757_486044798.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/1080p60/partial_movie_files/TransformFunction/680023278_345352296_104263386.mp4'
+file 'file:/Users/fsc/Library/CloudStorage/OneDrive-UniversidadCatólicadeChile/UC/Docencia/PIML/neural_operators/animations/media/videos/operator/1080p60/partial_movie_files/TransformFunction/680023278_1455389199_882521415.mp4'
