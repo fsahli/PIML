@@ -9,7 +9,7 @@ $$
 $$
 :::
 
-## Neural operators
+Francisco Sahli Costabal
 
 ### What is an operator?
 
@@ -73,7 +73,7 @@ d2P3 = 6*x - 2
 d2P4 = 12*x**2 - 6*x
 
 # Create subplots
-fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+fig, ax = plt.subplots(1, 2, figsize=(6, 3))
 
 # Plot the second derivatives on the left subplot
 ax[0].plot(x, d2P2, label="2nd derivative of $P_2(x)$", color='r')
@@ -248,6 +248,7 @@ import numpy as np
 
 # Set up the figure and axis
 fig, ax = plt.subplots()
+fig.set_size_inches((6,3))
 f = lambda x: (1 - 0.9*x**2)*np.sin(2*np.pi*x) + 1
 # Define x and y for the blue curve
 x = np.linspace(0,1,100)
@@ -333,7 +334,7 @@ test_set = multivariate_normal.rvs(mean=np.zeros(100), cov=K, size=20)
 integral_test_set = np.array([cumtrapz(y, x, initial=0) for y in test_set])
 
 # Create a figure with two subplots
-fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+fig, ax = plt.subplots(1, 2, figsize=(6, 3))
 
 # Plot the training curves
 for i in range(training_set.shape[0]):
@@ -360,6 +361,316 @@ plt.show()
 ```
 
 See [Google Colab demo](https://colab.research.google.com/drive/1lK4mV2I51u7sqz8UnDUuEojS5jsnf0BL?usp=sharing)
+
+
+## Fourier neural operator
+
+To introduce the Fourier neural operator (@li2020fourier), we need to first give some notions about the Fourier transform. **Disclaimer:** *this is an overly simplified presentation of the Fourier transform, but it is useful enough for this context. We are only going to consider the discrete Fourier transform for a real signal.*
+
+Let's assume a function $f(t)$ where I only know the values at discrete locations, equispaced in time $\Delta t$. Then, I can define the discrete signal as $f[n] = f(n \Delta t)$ for $n = {1,..,N}$. Now, I want to approximate this discrete time series with sine and cosine functions (this is called Fourier series): 
+
+$$f[n] = \frac{1}{N} \sum_{k=0}^{N-1} \left[ A_k \cos\left(2\pi \frac{nk}{N}\right) + B_k \sin\left(2\pi \frac{nk}{N}\right) \right]$$
+
+To achieve this, I need to compute $A_k,B_k$, which can be done using the discrete Fourier transform, yielding to:
+
+$$A_k = \sum_{n=0}^{N-1} f[n] \cdot \cos\left(2\pi \frac{nk}{N}\right)$$
+$$B_k = -\sum_{n=0}^{N-1} f[n] \cdot \sin\left(2\pi \frac{nk}{N}\right)$$
+
+Note that each of these coefficients is associated to a given frequency $k/N$ and representes the amplitude of the cosine and sine functions at that given frequency. We can think that these coefficients fully characterize the signal in the frequency domain. We can recover the signal in the time domain plugging the coefficients in Fourier series. This is called the inverse discrete Fourier transform. Note that we don't loose any information by going back and forth between the time and frequency domains.
+
+
+```{python}
+#| code-fold: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Sample rate and time vector
+Fs = 100  # Sample rate in Hz
+T = 1/Fs  # Sample interval time
+t = np.arange(0, 1, T)  # Time vector for one second
+
+# Frequency components
+f1 = 5  # Frequency of the first sine wave in Hz
+f2 = 12  # Frequency of the second cosine wave in Hz
+
+# Create signal
+signal = np.sin(2*np.pi*f1*t) + 0.5*np.cos(2*np.pi*f2*t)
+
+# Compute the Discrete Fourier Transform (DFT)
+F = np.fft.fft(signal)
+
+# Compute the frequency axis for plotting
+n = len(signal)
+freq = np.fft.fftfreq(n, T)
+
+# Plot the signal
+plt.figure(figsize=(6, 6))
+plt.subplot(221)
+plt.plot(t, signal)
+plt.title('$f(t) = \sin(2\pi5t) + 0.5\cos(2\pi12t)$')
+plt.xlabel('Time (seconds)')
+plt.ylabel('Amplitude')
+
+# Plot the DFT magnitude
+plt.subplot(222)
+plt.stem(freq[:n // 2], 2/n * np.real(F[:n // 2]), 'b', markerfmt=" ", basefmt="-b", label = '$A_k$')
+plt.stem(freq[:n // 2], -2/n * np.imag(F[:n // 2]), 'r', markerfmt=" ", basefmt="-r", label = '$B_k$')
+plt.title('Frequency Domain Signal')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude')
+plt.legend()
+plt.xlim(0, Fs/2)  # Display only the positive frequencies
+
+f1 = np.pi
+f2 = 12.33
+# Create signal
+signal = np.sin(2*np.pi*f1*t) + 0.1*np.cos(2*np.pi*f2*t)
+
+# Compute the Discrete Fourier Transform (DFT)
+F = np.fft.fft(signal)
+
+plt.subplot(223)
+plt.plot(t, signal)
+plt.title('$f(t)$')
+plt.xlabel('Time (seconds)')
+plt.ylabel('Amplitude')
+
+# Plot the DFT magnitude
+plt.subplot(224)
+plt.stem(freq[:n // 2], 2/n * np.real(F[:n // 2]), 'b', markerfmt=" ", basefmt="-b", label = '$A_k$')
+plt.stem(freq[:n // 2], -2/n * np.imag(F[:n // 2]), 'r', markerfmt=" ", basefmt="-r", label = '$B_k$')
+plt.title('Frequency Domain Signal')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude')
+plt.legend()
+plt.xlim(0, Fs/2)  # Display only the positive frequencies
+
+
+plt.tight_layout()
+plt.show()
+```
+
+### Filtering in frequency domain
+
+With the Fourier transform, we can easily filter the signal in the frequency domain by modifying the coefficients $A_k,B_k$. One of the most basic and most used filters is the low-pass filter, which removes the high-frequency components of the signal. In this case, we will set to zero all the coefficients $A_k, B_k$ for $k>k_{f}$.
+
+```{python}
+#| code-fold: true
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Sample rate and time vector
+Fs = 100  # Sample rate in Hz
+T = 1/Fs  # Sample interval time
+t = np.arange(0, 1, T)  # Time vector for one second
+
+# Frequency components
+f1 = 5  # Frequency of the first sine wave in Hz
+f2 = 40  # Frequency of the second cosine wave in Hz
+
+# Create signal
+signal = np.sin(2*np.pi*f1*t) + 0.3*np.cos(2*np.pi*f2*t)
+
+# Compute the Discrete Fourier Transform (DFT)
+F = np.fft.fft(signal)
+
+# Compute the frequency axis for plotting
+n = len(signal)
+freq = np.fft.fftfreq(n, T)
+
+# Apply low pass filter: Zero out frequencies above 7 Hz
+cutoff_frequency = 7
+Ff = F.copy()
+Ff[(np.abs(freq) > cutoff_frequency)] = 0
+
+# Compute the inverse DFT to get the filtered signal
+filtered_signal = np.fft.ifft(Ff)
+
+# Plot the original and filtered signal
+plt.figure(figsize=(6, 6))
+plt.subplot(221)
+plt.plot(t, signal)
+plt.title('Original Signal')
+plt.xlabel('Time (seconds)')
+plt.ylabel('Amplitude')
+
+plt.subplot(222)
+plt.plot(t, filtered_signal.real)  # Use real part of the inverse FFT result
+plt.title('Filtered Signal (Low pass at 7 Hz)')
+plt.xlabel('Time (seconds)')
+plt.ylabel('Amplitude')
+
+# Plot the DFT magnitude before filtering
+plt.subplot(223)
+plt.stem(freq[:n // 2], 2/n * np.real(F[:n // 2]), 'b', markerfmt=" ", basefmt="-b", label = '$A_k$')
+plt.stem(freq[:n // 2], -2/n * np.imag(F[:n // 2]), 'r', markerfmt=" ", basefmt="-r", label = '$B_k$')
+plt.title('Frequency Domain Before Filtering')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude')
+plt.legend()
+plt.xlim(0, Fs/2)  # Display only the positive frequencies
+
+# Plot the DFT magnitude after filtering
+plt.subplot(224)
+plt.stem(freq[:n // 2], 2/n * np.real(Ff[:n // 2]), 'b', markerfmt=" ", basefmt="-b", label = '$A_k$')
+plt.stem(freq[:n // 2], -2/n * np.imag(Ff[:n // 2]), 'r', markerfmt=" ", basefmt="-r", label = '$B_k$')
+plt.title('Frequency Domain After Filtering')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude')
+plt.xlim(0, Fs/2)  # Display only the positive frequencies
+
+plt.tight_layout()
+plt.show()
+```
+
+### Fourier neural operator
+
+This technique uses the Fourier transform and filtering as the main building block.
+
+**Data setup:** it also maps functions to functions, but both need to be defined in the same regular grid. In 2D, this would be equivalent to mapping pictures to pictures.
+
+**Architecture:** the input function takes as input $\vec{x} \in \mathbb{R}^d$ and produces a vector $\vec{g}(\vec{x}) \in \mathbb{R}^{d_a}$. The dimensionality of this input function vector is increased (lifting) by a shallow neural network that $P$ that outputs vector $\vec{v}_0(\vec{x}) \in \mathbb{R}^{d_v}$. The dimension of this vector will remain constant in the subsequent Fourier layers (explained later). Finally, the dimensionality of the output of the last Fourier layer $\vec{v}_n(\vec{x})$ is reduced to match the dimensionality of the output function $\vec{u}(\vec{x}) \in \mathbb{R}^{d_u}$ with another neural network Q.
+```{mermaid}
+flowchart LR
+    A["g(x)"] -->|lifting|B[P]
+    B --> D[Fourier layer]
+    D -->|...|E[Fourier layer]
+    E -->F[Q]
+    F -->|projection|G["u(x)"] 
+```
+
+The **Fourier layer** updates the vector $\vec{v}_{i+1}(\vec{x})$ as follows:
+
+$$\vec{v}_{i+1}(\vec{x}) = \sigma(\vec{W}\vec{v}_i(\vec{x}) + \mathcal{F}^{-1}(\vec{R}\mathcal{F}(\vec{v}_i))(\vec{x}))$$
+
+- The term $\vec{W}\vec{v}_i(\vec{x})$ applies a linear transformation to input vector.
+- The term $\mathcal{F}^{-1}(\vec{R}\mathcal{F}(\vec{v}_i))(\vec{x})$ is what is characteristic of the Fourier layer. The symbol $\mathcal{F}$ represents the discrete Fourier transform and $\mathcal{F}^{-1}$ its inverse. We can disect this operation in 3 steps:
+    - First, the Fourier transform of the entire function $\vec{v}_i(\vec{x})$ is taken.
+    - In the frequency domain, a filter $\vec{R}$ is applied. This filter is also low-pass, as only frequencies upto $k_{max}$ are retained. 
+    - Finally, the inverse Fourier transform is applied to recover a signal in the spatial domain.
+- The final step is apply an element-wise non-linear activation function $\sigma(\cdot)$.
+
+For simplicity, we are going to demostrate the filtering process of Fourier layer in 1D, and considering that the dimension of $\vec{v}_i(\vec{x})$ is also 1. 
+
+```{python}
+#| code-fold: true
+import numpy as np
+import plotly.graph_objects as go
+from scipy.spatial.distance import pdist, squareform
+from scipy.stats import norm
+from plotly.subplots import make_subplots
+
+
+# Function to create a Gaussian process
+def gaussian_process(num_points=100, length_scale=0.2):
+    # Define the squared exponential kernel function
+    def kernel(x1, x2, l = 0.2):
+        return np.exp(-0.5 * np.subtract.outer(x1, x2) ** 2 / l ** 2)
+    
+    # Generate evenly spaced points within the interval [0, 1]
+    x = np.linspace(0, 1, num_points)
+    # Compute the covariance matrix
+    K = kernel(x, x, l=length_scale)
+    # Sample from the Gaussian process
+    y = np.random.multivariate_normal(mean=np.zeros(num_points), cov=K)
+    return x, y
+
+# Define the function to modify R
+def modify_R(R1, R2, alpha):
+    R_new = (1 - alpha) * R1 + alpha * R2
+    R_new[20:] = 0
+    return R_new
+
+# Create two random normal vectors and interpolate
+np.random.seed(1234)
+R1 = norm.rvs(size=50) + 1j*norm.rvs(size=50)  # We only need half due to symmetry in the Fourier transform
+R2 = norm.rvs(size=50) + 1j*norm.rvs(size=50)
+
+# Generate the Gaussian process
+x, y = gaussian_process(num_points=100, length_scale=0.2)
+
+# Perform the Fourier transform
+Y = np.fft.fft(y)
+
+# Frequencies after FFT will be symmetric, keep only the first half
+freq = np.fft.fftfreq(x.size)[:x.size//2]
+R = modify_R(R1, R2, alpha = 0.5)
+
+def apply_R(y, R):
+    Y = np.fft.fft(y)
+
+    # Apply R to the positive frequencies of the Fourier coefficients
+    Y_mod = Y.copy()
+    Y_mod[:50] *= R
+    Y_mod[-50:] *= R[::-1]  # Apply the conjugate symmetry property
+
+    # Inverse Fourier transform to get the modified signal
+    y_mod = np.fft.ifft(Y_mod)
+
+    return y_mod, Y_mod
+
+y_mod, Y_mod = apply_R(y, R)
+
+# Plot the results
+fig = make_subplots(rows=2, cols=2, subplot_titles=('input signal', 'output signal','R','output FT'))
+
+
+# Add traces for the original signal, R, and reconstructed signal
+fig.add_trace(go.Scatter(x=x, y=y, mode='lines', name='input signal'), row=1, col=1)
+fig.add_trace(go.Scatter(x=freq, y=R.real, mode='lines', name='RAk'), row=2, col = 1)
+fig.add_trace(go.Scatter(x=freq, y=-R.imag, mode='lines', name='RBk'), row=2, col = 1)
+fig.add_trace(go.Scatter(x=freq, y=Y_mod.real, mode='lines', name='Ak'), row=2, col = 2)
+fig.add_trace(go.Scatter(x=freq, y=-Y_mod.imag, mode='lines', name='Bk'), row=2, col = 2)
+fig.add_trace(go.Scatter(x=x, y=y_mod.real, mode='lines', name='output signal'), row=1, col=2)
+
+# Set up sliders for interactive R modification
+sliders = [
+    {
+        'pad': {'t': 30},
+        'len': 0.4,
+        'x': 0.1,
+        'y': 0,
+        'currentvalue': {
+            'font': {'size': 20},
+            'prefix': 'Alpha:',
+            'visible': False,
+            'xanchor': 'right'
+        },
+        'steps': [
+            {
+                'method': 'update',
+                'label': str(alpha),
+                'args': [{'y': [y,
+                                -modify_R(R1, R2, alpha).real,modify_R(R1, R2, alpha).imag,
+                                apply_R(y, modify_R(R1, R2, alpha))[1].real,-apply_R(y, modify_R(R1, R2, alpha))[1].imag,
+                                apply_R(y, modify_R(R1, R2, alpha))[0].real]}]
+            } for alpha in np.linspace(0, 1, 30)
+        ]
+    }
+]
+
+fig.update_xaxes(title_text="x", row=1, col=1)
+fig.update_xaxes(title_text="x", row=1, col=2)
+fig.update_xaxes(title_text="k", row=2, col=1)
+fig.update_xaxes(title_text="k", row=2, col=2)
+
+
+fig.update_layout(
+    sliders=sliders,
+    width = 800, height = 800
+)
+
+fig.show()
+```
+
+There is an open source implementation of the Fourier neural operator [here](https://github.com/neuraloperator/neuraloperator/tree/main).
+
+
+#### Aplications
+
+- [Weather forecasting](https://arxiv.org/pdf/2202.11214.pdf)
+- [Seismic modeling](https://arxiv.org/pdf/2304.10242.pdf)
+
 
 ### References
 
