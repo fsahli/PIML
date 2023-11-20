@@ -1,0 +1,61 @@
+
+---
+title: "Introduction to Artificial Intelligence"
+format: 
+  revealjs:
+    center: true
+---
+
+## Introduction
+
+- Welcome and introduction
+- Overview of objectives
+- Relevance of AI in technology, especially in magnetic resonance
+
+## What is Artificial Intelligence?
+
+- Definition of AI
+- Brief history and evolution
+- Types of AI: Narrow AI, General AI
+
+## History of AI
+
+Pascaline: the first mechanical calculator by Blaise Pascal in 1642
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Pascaline-CnAM_823-1-IMG_1506-black.jpg/2880px-Pascaline-CnAM_823-1-IMG_1506-black.jpg)
+
+## Core Concepts of AI
+
+- **Machine Learning**
+  - Supervised Learning
+  - Unsupervised Learning
+  - Reinforcement Learning
+- **Neural Networks and Deep Learning**
+  - Basics and principles
+  - Application examples
+- **Data Analysis and Pattern Recognition**
+  - Role of data in AI
+  - Techniques for pattern recognition
+
+## AI in Magnetic Resonance
+
+- Specific applications in magnetic resonance
+- Case studies and recent advancements
+- Benefits and challenges in integration
+
+## Ethical Considerations and Future Prospects
+
+- Ethical concerns: bias, privacy, accountability
+- Future trends in AI
+- Potential impact on magnetic resonance technology
+
+## Conclusion and Q&A
+
+- Summary of key points
+- Inviting questions and discussions
+
+## Additional Notes
+
+- Use of visual aids like slides
+- Including real-world examples
+- Engaging with the audience
