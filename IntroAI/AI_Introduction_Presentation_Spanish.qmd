@@ -1,0 +1,145 @@
+
+---
+title: "Introducción a la Inteligencia Artificial"
+format: 
+  revealjs:
+    theme: simple
+    reference-location: document
+    incremental: true 
+---
+## {.smaller}
+
+::: {.r-fit-text}
+Introducción a la Inteligencia Artificial
+:::
+
+
+![](images/cover.png){.r-stretch}
+
+
+
+Francisco Sahli Costabal
+
+Pontificia Universidad Católica de Chile
+
+
+## Introducción
+- Título y breve introducción
+
+## Objetivos de la Charla
+- Visión general de los temas clave
+
+## ¿Qué es la IA?
+- *La ciencia y la ingenería de hacer máquinas inteligentes* (John McCarthy, 1955)^[[Stanford University Human Centered Artificial Intelligence](https://hai.stanford.edu/sites/default/files/2020-09/AI-Definitions-HAI.pdf)] 
+- ¿Qué es la inteligencia?
+  - Puede ser definida como la habilidad de aprender y ejecutar técnicas para resolver problemas y lograr metas en un ambiente incierto y cambiante. 
+  - Ejemplo un robot que siempre hace la misma tarea no es inteligente. 
+
+
+
+## El inicio de la IA {.smaller}
+
+:::: {.columns}
+
+::: {.column width="60%"}
+- Alan Turing propuso el Test de Turing en 1950, que consiste en que un humano intenta discernir si es que está interactuando con una máquina o un humano. 
+- El desarrollo de la ciencia de la computación fue crucial para la evolución de la IA.
+- En 1955 Allen Newell y Herbert A. Simon crean el "Logic Theorist", capaz de demonstrar teoremas matemáticos.
+- En 1956 se hace el "Darmouth Workshop", un encuentro de 8 semanas donde se definió el campo de la inteligencia artificial. 
+- Entre 1964 y 1967, se crea ELIZA, un programa de conversación que intenta pasar el test de Turing
+:::
+
+::: {.column width="40%"}
+![](images/Turing.png)
+:::
+
+::::
+
+## Predicciones de época
+
+- Herbert A. Simon (Premio Nobel Economía) en 1956: en 10 años un computador va a ser el campeón mundial de ajedrez. Esto ocurrió en 1997 con Deep Blue.
+- Marvin Minsky (Fundador MIT AI lab) en 1967: Within a generation, I am convinced, few compartments of intellect will remain outside the machine’s realm—the problems of creating “artificial intelligence” will be substantially solved.
+
+## MYCIN en la Historia de la IA
+- Rol e impacto de MYCIN en la IA médica.
+
+## IA en los Años 1950-1960
+- Primeros desarrollos y teorías
+
+## IA en los Años 1970-1980
+- Auge de los sistemas expertos
+
+## IA en los Años 1990
+- Expansión en la atención médica y otros campos
+
+## IA en los Años 2000
+- Aplicación generalizada en imágenes médicas y registros de salud electrónicos
+
+## IA en los Años 2010
+- Aprendizaje profundo y grandes datos
+
+## IA en la Atención Médica Hoy
+- Tendencias y tecnologías actuales
+
+## Fundamentos del Aprendizaje Automático
+- Tipos y aplicaciones
+
+## Redes Neuronales y Aprendizaje Profundo
+- Fundamentos e importancia
+
+## Análisis de Datos en la IA
+- Papel de los grandes datos y reconocimiento de patrones
+
+## IA en la Resonancia Magnética
+- Aplicaciones específicas y estudios de caso
+
+## Consideraciones Éticas en la IA
+- Preocupaciones y debates
+
+## Tendencias Futuras en la IA
+- Tecnologías y perspectivas emergentes
+
+## Aprendizaje Automático Informado por la Física
+- Concepto y aplicaciones
+
+## Representaciones Implícitas Neuronales
+- Comprensión y casos de uso
+
+## Transformadores en la IA
+- Fundamentos y evolución
+
+## Transformadores Visuales
+- Aplicación en el procesamiento de imágenes
+
+## Modelos Generativos en la IA
+- Visión general y ejemplos
+
+## Modelos de Difusión
+- Principios y aplicaciones
+
+## Privacidad Diferencial
+- Concepto e importancia
+
+## Aprendizaje Federado
+- Marco y ventajas
+
+## Integración de la IA en la Vida Cotidiana
+- Ejemplos e impacto
+
+## IA en los Negocios y la Industria
+- Cómo la IA está transformando los sectores
+
+## Desafíos en la Adopción de la IA
+- Obstáculos técnicos y sociales
+
+## IA y la Fuerza Laboral del Futuro
+- Impacto en empleos y habilidades
+
+## Conclusión
+- Resumen de puntos clave
+
+## Preguntas y Respuestas
+- Invitación a preguntas del público
+
+## Agradecimiento
+- Comentarios finales y agradecimientos
