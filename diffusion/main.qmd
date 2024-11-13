@@ -1,0 +1,362 @@
+---
+bibliography:
+- references.bib
+title: Generative Hyperelasticity with Physics-Informed Probabilistic
+  Diffusion Fields
+---
+
+<!-- ::: {.frontmatter}
+::: {.keyword}
+Hyperelasticity ,generative modeling ,neural ODEs ,data-driven modeling
+,heterogeneous materials ,homogenization
+:::
+::: -->
+
+
+
+## Diffusion generative models
+
+In generative modeling, the task is to find the model distribution
+$\hat{p}(\boldsymbol{\phi})$ that best approximates the data
+distribution $p(\boldsymbol{\phi})$ given some samples
+$\{\boldsymbol{\phi}_0^{i}\}_{i=1}^N$, where the subscript $0$ is used
+to imply $t=0$ in the diffusion process. For a given density function
+$p(\boldsymbol{\phi})$, a score-based generative model employs two SDEs.
+The first one is called the *forward SDE*, and has the Itô form
+$$\begin{aligned}
+    d \boldsymbol{\phi}_t &= \mathbf{f}(\boldsymbol{\phi}_t,t) dt + \mathbf{g}(t) d \mathbf{B}_t \, , \label{eq:fwdSDE_general}
+    \\
+    \boldsymbol{\phi}_0 &\sim p \nonumber 
+    \end{aligned}$$ for $t$
+between $0$ and $T$, and initial conditions $\boldsymbol{\phi}_0$
+sampled from $p(\boldsymbol{\phi})$. Here $\mathbf{B}_t$ is
+m-dimensional Brownian motion (or Wiener process) and
+$\mathbf{f}(\boldsymbol{\phi}_t,t)$ and $\mathbf{g}(t)$ are functions
+that calculate the drift and diffusion coefficients, respectively. The
+drift coefficient is designed such that it gradually turns the data
+$\boldsymbol{\phi}_0$ into noise, while the diffusion coefficient
+controls the amount of Gaussian noise added in each step.
+
+```{python}
+#| code-fold: true
+import numpy as np
+import pandas as pd
+import plotly.express as px
+
+# Define parameters for the circle and SDE process
+num_points = 200  # Number of points on the circle
+radius = 3.0      # Radius of the circle
+timesteps = np.linspace(0, 1, 50)  # Time steps for the SDE process
+beta_min, beta_max = 0.001, 3.0   # Parameters for the scaling function beta(t)
+
+# Generate initial circle data
+angles = np.linspace(0, 2 * np.pi, num_points)
+initial_x = radius * np.cos(angles)
+initial_y = radius * np.sin(angles)
+initial_points = np.column_stack((initial_x, initial_y))
+
+# Function to calculate the scaling parameter for OU process at time t
+def beta(t):
+    return beta_min + t * (beta_max - beta_min)
+
+# Define a function to simulate the forward SDE (OU process) with drift and noise
+def forward_sde(points, t):
+    mu = np.exp(-beta(t) * t / 2)
+    sigma = np.sqrt(1 - np.exp(-beta(t) * t))
+    noise = np.random.normal(0, sigma, points.shape)
+    return mu * points + noise
+
+# Generate SDE data for each time step
+sde_data = []
+for t in timesteps:
+    sde_points = forward_sde(initial_points, t)
+    sde_data.append(pd.DataFrame({
+        'x': sde_points[:, 0],
+        'y': sde_points[:, 1],
+        'time': t
+    }))
+sde_df = pd.concat(sde_data)
+
+# Plot with Plotly and a slider for time
+fig = px.scatter(sde_df, x='x', y='y', animation_frame='time', 
+                 title="2D Circle to Gaussian Noise Transformation using Forward SDE",
+                 labels={'x': 'X', 'y': 'Y'}, width=600, height=600)
+
+fig.update_yaxes(
+    scaleanchor="x",
+    scaleratio=1,
+  )
+
+# Customize the layout for the slider and animation speed
+fig.update_layout(
+    updatemenus=[{
+        'type': 'buttons',
+        'showactive': False,
+        'buttons': [{
+            'label': 'Play',
+            'method': 'animate',
+            'args': [None, {'frame': {'duration': 50, 'redraw': True}, 'fromcurrent': True}]
+        }, {
+            'label': 'Pause',
+            'method': 'animate',
+            'args': [[None], {'frame': {'duration': 0, 'redraw': True}, 'mode': 'immediate', 'transition': {'duration': 0}}]
+        }]
+    }]
+)
+
+fig.update_layout(yaxis_range=[-3,3])
+fig.update_layout(xaxis_range=[-3,3])
+
+fig.update_layout(sliders=[{
+    'currentvalue': {'prefix': 'Time: ', 'font': {'size': 16}},
+    'pad': {'t': 50},
+}])
+
+fig.show()
+```
+
+The second SDE, known as the *reverse SDE*
+[@songScoreBasedGenerativeModeling2021], it runs for $t$ from $T$ to
+$0$, and it has the form
+$$d \boldsymbol{\phi}_t = \left[\mathbf{g}^2(t) \nabla_{\boldsymbol{\phi}} \log p_t(\boldsymbol{\phi}) - \mathbf{f}(\boldsymbol{\phi}_t,t) \right] dt + \mathbf{g}(t) d \hat{\mathbf{B}}_t,$$
+where $\hat{\mathbf{B}}_t$ represents the Brownian motion when time is
+reversed and the quantity
+$\nabla_{\boldsymbol{\phi}} \log p_t(\boldsymbol{\phi})$ is known as the
+*score function*. Note that this introduces the density
+$p_t(\boldsymbol{\phi}_t)$, which is related to the forward SDE as will
+be explained shortly. It can be shown that if we start with Gaussian
+noise ($\boldsymbol{\phi}_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$
+with $\mathbf{I}$ the identify matrix, the reverse SDE recovers the original data by
+removing the drift responsible for the destruction of the data.
+
+```{python}
+#| code-fold: true
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
+from scipy.special import logsumexp
+
+# Define parameters for the circle and SDE process
+
+
+reverse_sde_df = pd.read_pickle('reverse_sde_df.pkl')
+timesteps = reverse_sde_df['time'].unique()
+
+radius = 3.0
+
+
+# Initialize Plotly figure with data for the first frame
+t0 = timesteps[0]
+frame_data = reverse_sde_df[reverse_sde_df['time'] == t0]
+
+
+fig = go.Figure()
+
+# Scatter plot for points
+fig.add_trace(go.Scatter(
+    x=frame_data['x'], y=frame_data['y'],
+    mode='markers', marker=dict(size=4),
+    name='Points',
+))
+
+
+# Create frames for animation
+frames = []
+for t in timesteps:
+    frame_data = reverse_sde_df[reverse_sde_df['time'] == t]
+
+    scatter_trace = go.Scatter(
+        x=frame_data['x'],
+        y=frame_data['y'],
+        mode='markers',
+        marker=dict(size=4),
+        name='Points',
+    )
+
+ 
+
+    frames.append(go.Frame(data=[scatter_trace], name=str(t)))
+
+fig.frames = frames
+
+# Add slider and play/pause buttons
+sliders = [dict(
+    steps=[dict(method='animate',
+                args=[[str(t)],
+                      dict(mode='immediate',
+                           frame=dict(duration=50, redraw=True),
+                           transition=dict(duration=0))],
+                label=f'{t:.2f}'
+                ) for t in timesteps],
+    active=0,
+    transition=dict(duration=0),
+    x=0,  # slider starting position  
+    y=0,  # slider vertical position
+    currentvalue=dict(font=dict(size=16), prefix='Time: ', visible=True, xanchor='right'),
+    len=1.0  # Length of slider
+)]
+
+fig.update_layout(
+    updatemenus=[dict(
+        type='buttons',
+        buttons=[dict(label='Play',
+                      method='animate',
+                      args=[None, dict(frame=dict(duration=50, redraw=True),
+                                       transition=dict(duration=0),
+                                       fromcurrent=True,
+                                       mode='immediate')]),
+                 dict(label='Pause',
+                      method='animate',
+                      args=[[None], dict(frame=dict(duration=0, redraw=True),
+                                         transition=dict(duration=0),
+                                         mode='immediate')])],
+        direction='left',
+        pad=dict(r=10, t=70),
+        showactive=False,
+        x=0.1,
+        y=0,
+        xanchor='right',
+        yanchor='top'
+    )],
+    sliders=sliders
+)
+
+# Axis scaling for consistency
+fig.update_yaxes(scaleanchor="x", scaleratio=1)
+fig.update_layout(yaxis_range=[-radius-0.5, radius+0.5], xaxis_range=[-radius, radius])
+
+fig.show()
+
+```
+
+There are a number of popular choices for the forward and the associated
+reverse SDE used in the literature, such as Brownian motion, critically
+damped Langevin dynamics, and the Ornstein-Uhlenbeck (OU) process
+[@pidstrigachScoreBasedGenerativeModels2022]. Here we will explain in more detail the
+scaled OU process for the forward and reverse SDEs, given as
+$$\begin{aligned}
+    d \boldsymbol{\phi}_t &= -\frac{1}{2} \beta(t) \boldsymbol{\phi}_t dt + \sqrt{\beta(t)}d \mathbf{B}_t, &\text{(forward SDE)}
+    \\
+    d \boldsymbol{\phi}_t &= \frac{1}{2} \beta(t) \boldsymbol{\phi}_t dt + \beta(t) \nabla \log p_{t} (\boldsymbol{\phi}_t) dt +\sqrt{t \beta(t)} d\hat{\mathbf{B}}_t. &\text{(reverse SDE)}
+    \label{eq:reverseOU}\end{aligned}$$ One of the advantages of the OU
+process is its simple form. Since both dispersion and drift functions
+are linear in $\boldsymbol{\phi}$, the solution of the forward SDE is
+given in closed form as a normally distributed random variable. The
+marginal of $\boldsymbol{\phi}_t$ conditioned on the observation of the
+starting point $\boldsymbol{\phi}_0$ is a normal distribution
+$$p_{t|0} (\boldsymbol{\phi}_t|\boldsymbol{\phi}_0) = \mathcal{N} \left( \boldsymbol{\phi}_t \, | \, \mu(t)\boldsymbol{\phi}_0, \Sigma(t) \mathbf{I} \right) \, ,
+    \label{eq:pt0}$$ where the mean $\mu(t)$ and variance $\Sigma(t)$
+depend on the scaling $\beta(t)$. For example, for the standard OU
+process with no scaling, i.e. $\beta=1$,
+$$p_{t|0} (\boldsymbol{\phi}_t|\boldsymbol{\phi}_0) = \mathcal{N} \left(\boldsymbol{\phi}_t|  \exp(-t/2) \boldsymbol{\phi}_0, (1-\exp(-t)) \mathbf{I} \right) \, .
+    \label{eq:pt0_OU}$$ Here we follow the recommendations from
+[@karras2022elucidating; @pidstrigach2022scorebased] and choose the
+scaling $$\beta(t) = \beta_{\min} + t(\beta_{\max}-\beta_{\min})\, ,$$
+with hyper-parameters $\beta_{\min}=0.001$, $\beta_{\max}=3$
+[@karras2022elucidating], which leads to mean and variance of the
+conditional distribution ([\[eq:pt0\]](#eq:pt0){reference-type="ref"
+reference="eq:pt0"}), $$\begin{aligned}
+    \mu(t) &= \exp(-\alpha(t)/2), \\
+    \Sigma(t) &= 1-\exp(-\alpha(t)) \, ,\end{aligned}$$ with
+$$\alpha(t) = \int_0^t \beta(s)ds=\beta_{\min} t + \frac{1}{2} t^2 (\beta_{\max}-\beta_{\min})\, .$$
+
+The importance of the marginal Eq.
+([\[eq:pt0_OU\]](#eq:pt0_OU){reference-type="ref"
+reference="eq:pt0_OU"}) will become evident later. As an initial
+motivation, note that the density $p_t(\boldsymbol{\phi}_t)$ and
+therefore the score function
+$\nabla_{\boldsymbol{\phi}} \log p_t(\boldsymbol{\phi})$ is unknown. In
+score-based generative models, the score function is approximated by a
+neural network
+$s_{\boldsymbol{\theta}}(\boldsymbol{\phi},t) \approx \nabla_{\boldsymbol{\phi}} \log p_t(\boldsymbol{\phi})$
+parameterized by weights and biases $\boldsymbol{\theta}$ in a process
+known as *score matching*.
+
+### Score matching
+
+We would like to minimize the training loss defined as
+$$L(\boldsymbol{\theta}) = \int_0^T \mathbb{E}_{p_t} \left[||\nabla_{\boldsymbol{\phi}} \log p_t(\boldsymbol{\phi}) - s_{\boldsymbol{\theta}}(\boldsymbol{\phi},t)||^2 \right] dt,$$
+where $\mathbb{E}_{p_t}$ denotes the expectation over
+$p_t(\boldsymbol{\phi})$. However, the density function
+$p_t(\boldsymbol{\phi}_t)$ is unknown. Instead we can approximate
+$p_t(\boldsymbol{\phi}_t)$ from the data. First, note that
+$p_t(\boldsymbol{\phi}_t)$ can be obtained by marginalizing the
+conditional on the initial distribution of the forward SDE
+
+$$p_t(\boldsymbol{\phi}_t) = \int p_{t|0}(\boldsymbol{\phi}|\boldsymbol{\phi}_0) p(\boldsymbol{\phi}_0) d\boldsymbol{\phi}_0 \, .$$
+We do not have the distribution of the data, however, we can approximate
+it based on the available samples,
+
+$$p_0(\boldsymbol{\phi}_0)  \approx \hat{p}_0(\boldsymbol{\phi}_0) = \sum_{i=1}^N \delta(\boldsymbol{\phi}-\boldsymbol{\phi}_0^i)\, .$$
+
+With this approximation of $p_0(\boldsymbol{\phi}_0)$, we get our
+approximation of $p_t(\boldsymbol{\phi}_t)$ which we denote
+$\hat{p}_t(\boldsymbol{\phi}_t)$,
+$$\hat{p}_t(\boldsymbol{\phi}_t) = \mathbb{E}_{\hat{p}_{0} }[p_{t|0}(\boldsymbol{\phi}|\boldsymbol{\phi}_0)] = \frac{1}{N} \sum_{i=1}^N p_{t|0} \left(\boldsymbol{\phi}|\boldsymbol{\phi}^{i}_0\right),
+    \label{eq:phat}$$ where
+$p_{t|0} (\boldsymbol{\phi}|\boldsymbol{\phi}^{i}_0)$ are the Gaussians
+defined in ([\[eq:pt0_OU\]](#eq:pt0_OU){reference-type="ref"
+reference="eq:pt0_OU"}) evaluated at the points $\boldsymbol{\phi}_0^i$
+[@vincent2011connection], for which the logarithm and gradient can be
+easily computed. Substituting this, we obtain the surrogate loss as
+$$\hat{L}(\boldsymbol{\theta}) = \int_0^T \mathbb{E}_{\hat{p}_t}\left[||\nabla_{\boldsymbol{\phi}} \log \hat{p}_t(\boldsymbol{\phi}) - s_{\boldsymbol{\theta}}(\boldsymbol{\phi},t)||^2\right] dt.
+    \label{eq:Loss}$$
+
+The score function $s_{\boldsymbol{\theta}}$ is captured with an MLP
+parameterized by $\boldsymbol{\theta}$. To evaluate Eq.
+([\[eq:Loss\]](#eq:Loss){reference-type="ref" reference="eq:Loss"}),
+samples from the uniform distribution $t\sim \mathcal{U}(0,1)$ are
+drawn, as well as samples from Eq.
+([\[eq:phat\]](#eq:phat){reference-type="ref" reference="eq:phat"}) to
+obtain the expectations. 
+
+### Sample generation
+
+Once trained, the score $s_{\boldsymbol{\theta}}$ is used in place of
+$\nabla_{\boldsymbol{\phi}} \log p_{t} (\boldsymbol{\phi}_t)$ in the
+reverse SDE Eq. ([\[eq:reverseOU\]](#eq:reverseOU){reference-type="ref"
+reference="eq:reverseOU"}) with initial conditions
+$\boldsymbol{\phi}_T \sim \mathcal{N}(\mathbf{0},\mathbf{I})$. 
+### Conditional diffusion
+
+We can condition the generation process to obtain samples that are
+closer to a given measurement. The score function can be obtained from
+the density by differentiating its logarithm and the density can be
+recovered up to a constant by integrating the score function. This means
+working with the score function is equivalent to working with the
+density function. This allows us to use Bayes' rule to condition the
+generation process on a set of observations $\mathbf{y}$:
+$$\begin{aligned}
+    p(\boldsymbol{\phi}|\mathbf{y}) = \frac{p(\mathbf{y}|\boldsymbol{\phi})p(\boldsymbol{\phi})}{p(\mathbf{y})}\, ,\end{aligned}$$
+or -- in terms of the score function --
+[@songScoreBasedGenerativeModeling2021],
+$$\nabla_{\boldsymbol{\phi}} \log p(\boldsymbol{\phi}|\mathbf{y}) = \underbrace{\nabla_{\boldsymbol{\phi}} \log p(\mathbf{y}|\boldsymbol{\phi})}_{\text{Score of the likelihood}} + \underbrace{\nabla_{\boldsymbol{\phi}}\log p(\boldsymbol{\phi})}_{\text{The trained score, } \approx s_{\boldsymbol{\theta}}(\boldsymbol{\phi},t)}.$$
+This new score function can be plugged into the reverse SDE after
+training to obtain samples conditioned on observations $\mathbf{y}$.
+
+For example, consider $\boldsymbol{\phi}$ to be the parameters of a
+NODE. Let $\mathbf{y}\in \mathbb{R}^{n_{\text{obs}}}$ be the observation
+of some quantities of interest, e.g. the stress, and
+$\hat{\boldsymbol{\sigma}} (\boldsymbol{\phi}) : \mathbb{R}^N \to \mathbb{R}^{n_\text{obs}}$
+the material model connecting the variables $\boldsymbol{\phi}$ to the
+quantity of interest. Assuming a Gaussian likelihood with noise
+$\varsigma$, the corresponding score is
+
+$$\nabla_{\boldsymbol{\phi}} \log p(\mathbf{y} | \boldsymbol{\phi}) =  -\frac{1}{2 \varsigma^2} \sum_{i=1}^{n_{\text{obs}}} \left((y_i -\hat{\sigma}_i(\boldsymbol{\phi})) \nabla_{\boldsymbol{\phi}} \hat{\sigma}_i \right).    
+    \label{eq_conditional_diffusion_s}$$
+
+The reverse SDE is analogous to
+([\[eq:reverseOU\]](#eq:reverseOU){reference-type="ref"
+reference="eq:reverseOU"}) but with the additional score
+
+$$d \boldsymbol{\phi}_t = \frac{1}{2} \beta(t) \boldsymbol{\phi}_t dt +\beta(t) \left(\nabla_{\boldsymbol{\phi}} \log p_t(\boldsymbol{y}|\boldsymbol{\phi_t}) + \nabla_{\boldsymbol{\phi}} \log p_{t} (\boldsymbol{\phi}_t) \right) dt + \sqrt{t \beta(t)} d\hat{\mathbf{B}}_t \, .
+    \label{eq:conditional_SDE}$$
+
+Note that while it is possible to use the likelihood as in
+([\[eq_conditional_diffusion_s\]](#eq_conditional_diffusion_s){reference-type="ref"
+reference="eq_conditional_diffusion_s"}), plugging in the current value
+of the variable $\boldsymbol{\phi}_t$, a time dependent likelihood can
+be designed as proposed in [@chung2022improving; @chung2022diffusion].
+
+
+
