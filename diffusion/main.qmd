@@ -1,8 +1,7 @@
 ---
 bibliography:
 - references.bib
-title: Generative Hyperelasticity with Physics-Informed Probabilistic
-  Diffusion Fields
+title: Diffusion generative models
 ---
 
 <!-- ::: {.frontmatter}
@@ -12,9 +11,14 @@ Hyperelasticity ,generative modeling ,neural ODEs ,data-driven modeling
 :::
 ::: -->
 
+## How is this possible?
+
+![An image generated with Stable Diffusion 3.5 based on the text prompt "a photograph of an astronaut riding a horse" from Wikipedia](https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Astronaut_Riding_a_Horse_%28SD3.5%29.webp/500px-Astronaut_Riding_a_Horse_%28SD3.5%29.webp.png)
 
 
-## Diffusion generative models
+## The basics
+
+*This text was adapted from: [@tacc2024generative]*
 
 In generative modeling, the task is to find the model distribution
 $\hat{p}(\boldsymbol{\phi})$ that best approximates the data
